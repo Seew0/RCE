@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"rce/models"
 	"rce/server"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
@@ -30,8 +32,10 @@ func main() {
 		defer wg.Done()
 		inputChan := make(chan models.Request)
 		outputChan := make(chan models.Response)
-		server := server.NewServer(port, inputChan, outputChan)
+		Router := gin.Default()
+		server := server.NewServer(port, inputChan, outputChan, Router)
 		server.Run()
+		fmt.Println("server running on" + port)
 	}()
 	wg.Wait()
 }

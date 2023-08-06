@@ -114,7 +114,7 @@ func (e *Execution) Run(cmd *exec.Cmd, file *os.File) (*models.Response, error) 
 	}
 
 	output.Errors = stderr.String()
-	output.Output = stdout.String()
+	output.Std_output[0] = stdout.String()
 	output.ReqID = e.CodeID
 
 	err = os.Remove(file.Name())

@@ -1,8 +1,8 @@
 package server
 
 import (
+	"log"
 	"rce/models"
-	"rce/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,9 +24,10 @@ func NewServer(port string, InputChan chan models.Request, OutputChan chan model
 }
 
 func (s *Server) Run() {
-	go utils.CodeRunner(s.InputChan, s.OutputChan)
-
 	s.router.POST("/api/execute", func(ctx *gin.Context) {
 		codeHandler(ctx)
 	})
+
+	log.Printf("Your server is serving at 127.0.0.1%v", s.port)
+	s.router.Run(s.port)
 }

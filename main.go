@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"rce/models"
@@ -12,8 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// what if we use goroutines and channels and bwrap to scale,
-// make a small vertically scalled program and then in horizontal just use sandboxes?
+var wg sync.WaitGroup
 
 func init() {
 	err := godotenv.Load("./.env")
@@ -23,19 +21,18 @@ func init() {
 }
 
 func main() {
-	// start bwrap monitor
-	var wg sync.WaitGroup
+	
 	port := os.Getenv("port")
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		inputChan := make(chan models.Request)
-		outputChan := make(chan models.Response)
+		
+		inputChan := make(chan models.Request, 1)
+		outputChan := make(chan models.Response, 1)
 		Router := gin.Default()
 		server := server.NewServer(port, inputChan, outputChan, Router)
+		
 		server.Run()
-		fmt.Println("server running on" + port)
 	}()
 	wg.Wait()
 }

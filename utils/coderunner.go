@@ -6,41 +6,40 @@ import (
 	"rce/models"
 )
 
-func CodeRunner(inputChan chan models.Request, outputChan chan models.Response) {
-	for job := range inputChan {
-		newExecution := ExecutionAdapter(job.ReqID,job.Language,job.Code,job.CodeInput)
+func CodeRunner(req models.Request, outputChan chan models.Response) {
+	
+		newExecution := ExecutionAdapter(req.ReqID,req.Language,req.Code,req.CodeInput)
 
 		file, err := newExecution.TempFile()
-		if err != nil {
-			// something error
-		}
+		if err != nil{
+			log.Fatalf("PHATA HAI \n%v",err)
+		} 
 
 		var cmd *exec.Cmd
 
-		if job.Language == "c" || job.Language == "cpp" || job.Language == "java" {
+		if req.Language == "c" || req.Language == "cpp" || req.Language == "java" {
 			var buildresp *models.Response
 			cmd, buildresp, err = newExecution.ExecuteCompilable(file)
 			if len(buildresp.Errors) != 0 {
 				outputChan <- *buildresp
-				continue
+				return
 			}
 			if err != nil {
-				log.Println(err)
+				log.Println("idhar hai phatta hua ",err)
 			}
 		}
 
-		if job.Language == "python3" || job.Language == "go" || job.Language == "bash" {
+		if req.Language == "python3" || req.Language == "go" || req.Language == "bash" {
 			cmd, err = newExecution.ExecuteInterpreted(file)
 			if err != nil {
-				log.Println(err)
+				log.Println("execute ni hua ",err)
 			}
 		}
 
 		resp, err := newExecution.Run(cmd, file)
 		if err != nil {
-			log.Println(err)
+			log.Printf("run ni hua %v   resp %v",err,resp )
 		}
 
 		outputChan <- *resp
 	}
-}

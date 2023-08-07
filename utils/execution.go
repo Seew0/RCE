@@ -3,17 +3,20 @@ package utils
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"rce/models"
 )
 
 type Execution struct {
-	CodeID  string
+	CodeID   string
 	Language string
-	Code    string
-	Input   string
+	Code     string
+	Input    string
 }
 
 func ExecutionAdapter(codeid string, Language string, code string, input string) *Execution {
@@ -24,20 +27,49 @@ func (e *Execution) TempFile() (*os.File, error) {
 	var file *os.File
 	var err error
 
+	fmt.Println(e.Language)
+
+	// Generate a unique filename for the temporary file using a random string
+	// or use the provided CodeID for languages other than Java.
+	filename := e.CodeID
+	extensionType := e.Language
 	if e.Language == "java" {
-		file, err = os.CreateTemp("./"+e.Language+"/", e.CodeID+"."+e.Language)
-	} else {
-		file, err = os.CreateTemp("./"+e.Language+"/", "Main.java")
+		filename = "Main"
+	}
+	if e.Language == "python3" {
+		extensionType = "py"
+	}
+	if e.Language == "javascript"{
+		extensionType = "js"
 	}
 
-	defer file.Close()
-
+	// Create the directory if it doesn't exist
+	err = os.MkdirAll("./"+extensionType, os.ModePerm)
 	if err != nil {
+		log.Println("Error creating directory:", err)
 		return nil, err
 	}
 
+	file, err = os.Create(filepath.Join("./"+extensionType, filename+"."+extensionType))
+	if err != nil {
+		log.Println("Error creating temp file:", err)
+		return nil, err
+	}
+
+	// Close the file when the function returns to ensure it gets cleaned up properly.
+	// Use defer after checking for errors, so the file is closed only if it was successfully created.
+	defer file.Close()
+
 	_, err = file.WriteString(e.Code)
 	if err != nil {
+		log.Println("Error writing to temp file:", err)
+		return nil, err
+	}
+
+	// Sync the file to ensure data is written to disk before returning.
+	err = file.Sync()
+	if err != nil {
+		log.Println("Error syncing temp file:", err)
 		return nil, err
 	}
 
@@ -110,6 +142,7 @@ func (e *Execution) Run(cmd *exec.Cmd, file *os.File) (*models.Response, error) 
 
 	err := cmd.Run()
 	if err != nil {
+		log.Println("err aaya hai running mein ",err)
 		return output, err
 	}
 
@@ -119,6 +152,7 @@ func (e *Execution) Run(cmd *exec.Cmd, file *os.File) (*models.Response, error) 
 
 	err = os.Remove(file.Name())
 	if err != nil {
+		log.Println("err aaya hai deleting mein ",err)
 		return output, err
 	}
 

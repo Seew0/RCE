@@ -29,8 +29,7 @@ func (e *Execution) TempFile() (*os.File, error) {
 
 	fmt.Println(e.Language)
 
-	// Generate a unique filename for the temporary file using a random string
-	// or use the provided CodeID for languages other than Java.
+
 	filename := e.CodeID
 	extensionType := e.Language
 	if e.Language == "java" {
@@ -116,12 +115,12 @@ func (e *Execution) ExecuteInterpreted(file *os.File) (*exec.Cmd, error) {
 
 	switch e.Language {
 	case "python3":
-		cmd = exec.Command("python", "./"+"py"+"/", file.Name())
+		cmd = exec.Command("python", file.Name())
 	case "go":
-		cmd = exec.Command("go run", "./"+e.Language+"/", file.Name())
+		cmd = exec.Command("go run", file.Name())
 	case "bash":
 		file.Chmod(755)
-		cmd = exec.Command("./"+"sh"+"/", file.Name())
+		cmd = exec.Command("./", file.Name())
 	default:
 		return nil, errors.New("language not supported")
 	}
@@ -142,17 +141,20 @@ func (e *Execution) Run(cmd *exec.Cmd, file *os.File) (*models.Response, error) 
 
 	err := cmd.Run()
 	if err != nil {
-		log.Println("err aaya hai running mein ",err)
+		log.Println("err aaya hai running mein ", err)
 		return output, err
 	}
 
 	output.Errors = stderr.String()
-	output.Std_output[0] = stdout.String()
+
+	// Initialize Std_output as a slice and add the stdout.String() value to it.
+	output.Std_output = append(output.Std_output, stdout.String())
+
 	output.ReqID = e.CodeID
 
 	err = os.Remove(file.Name())
 	if err != nil {
-		log.Println("err aaya hai deleting mein ",err)
+		log.Println("err aaya hai deleting mein ", err)
 		return output, err
 	}
 
